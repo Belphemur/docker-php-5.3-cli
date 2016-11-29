@@ -2,7 +2,7 @@ FROM alpine:3.4
 #FROM debian:jessie
 
 # persistent / runtime deps
-RUN apk add --no-cache ca-certificates curl git pcre-dev recode-dev sqlite-dev libxml2-dev gnupg tar
+RUN apk add --no-cache ca-certificates curl git pcre-dev recode-dev sqlite-dev libxml2-dev gnupg tar bash
 
 # phpize deps
 RUN apk add --no-cache autoconf file g++ gcc libc-dev make re2c build-base findutils

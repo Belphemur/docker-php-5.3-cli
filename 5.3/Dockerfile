@@ -1,10 +1,14 @@
-FROM debian:jessie
+FROM alpine:3.4
+#FROM debian:jessie
 
 # persistent / runtime deps
-RUN apt-get update && apt-get install -y ca-certificates curl git libpcre3 librecode0 libsqlite3-0 libxml2 --no-install-recommends && rm -r /var/lib/apt/lists/*
+RUN apk add --no-cache ca-certificates curl git pcre-dev recode-dev sqlite-dev libxml2-dev gnupg tar
 
 # phpize deps
-RUN apt-get update && apt-get install -y autoconf file g++ gcc libc-dev make pkg-config re2c --no-install-recommends && rm -r /var/lib/apt/lists/*
+RUN apk add --no-cache autoconf file g++ gcc libc-dev make re2c build-base findutils
+
+# PHP deps
+RUN apk add --no-cache bzip2 curl-dev readline-dev zlib openssl-dev libssl1.0
 
 ENV PHP_INI_DIR /usr/local/etc/php
 RUN mkdir -p $PHP_INI_DIR/conf.d
@@ -19,34 +23,22 @@ RUN set -xe \
 	done
 
 # compile openssl, otherwise --with-openssl won't work
-RUN OPENSSL_VERSION="1.0.2d" \
-      && cd /tmp \
-      && mkdir openssl \
-      && curl -sL "https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz" -o openssl.tar.gz \
-      && curl -sL "https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz.asc" -o openssl.tar.gz.asc \
-      && gpg --fingerprint 0E604491 \
-      && gpg --verify openssl.tar.gz.asc \
-      && tar -xzf openssl.tar.gz -C openssl --strip-components=1 \
-      && cd /tmp/openssl \
-      && ./config && make && make install \
-      && rm -rf /tmp/*
+#RUN OPENSSL_VERSION="1.1.0c" \
+#      && cd /tmp \
+#      && mkdir openssl \
+#      && curl -sL "https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz" -o openssl.tar.gz \
+#      && curl -sL "https://www.openssl.org/source/openssl-$OPENSSL_VERSION.tar.gz.asc" -o openssl.tar.gz.asc \
+#      && gpg --fingerprint 0E604491 \
+#      && gpg --verify openssl.tar.gz.asc \
+#      && tar -xzf openssl.tar.gz -C openssl --strip-components=1 \
+#      && cd /tmp/openssl \
+#      && ./config && make && make install \
+#      && rm -rf /tmp/*
 
 ENV PHP_VERSION 5.3.29
 
 # --enable-mysqlnd is included below because it's harder to compile after the fact the extensions are (since it's a plugin for several extensions, not an extension in itself)
-RUN buildDeps=" \
-		$PHP_EXTRA_BUILD_DEPS \
-		bzip2 \
-		libcurl4-openssl-dev \
-		libpcre3-dev \
-		libreadline6-dev \
-		librecode-dev \
-		libsqlite3-dev \
-		libssl-dev \
-		libxml2-dev \
-	" \
-    && set -x \
-    && apt-get update && apt-get install -y $buildDeps --no-install-recommends && rm -rf /var/lib/apt/lists/* \
+RUN set -x \
     && curl -SL "http://php.net/get/php-$PHP_VERSION.tar.bz2/from/this/mirror" -o php.tar.bz2 \
     && curl -SL "http://php.net/get/php-$PHP_VERSION.tar.bz2.asc/from/this/mirror" -o php.tar.bz2.asc \
     && gpg --fingerprint 0A95E9A026542D53835E3F3A7DEC4E69FC9C83D7 \
@@ -62,7 +54,7 @@ RUN buildDeps=" \
 		--disable-cgi \
 		--enable-mysqlnd \
 		--with-curl \
-        --with-openssl=/usr/local/ssl \
+        	--with-openssl=/usr/ \
 		--with-pcre \
 		--with-readline \
 		--with-recode \
@@ -70,7 +62,6 @@ RUN buildDeps=" \
     && make -j"$(nproc)" \
     && make install \
 	&& { find /usr/local/bin /usr/local/sbin -type f -executable -exec strip --strip-all '{}' + || true; } \
-    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $buildDeps \
     && make clean
     
     

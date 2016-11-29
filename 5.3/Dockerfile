@@ -72,6 +72,12 @@ RUN buildDeps=" \
 	&& { find /usr/local/bin /usr/local/sbin -type f -executable -exec strip --strip-all '{}' + || true; } \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $buildDeps \
     && make clean
+    
+    
+# Install Composer
+RUN curl -s http://getcomposer.org/installer | php \
+    && mv composer.phar /usr/local/bin/ \
+    && ln -s /usr/local/bin/composer.phar /usr/local/bin/composer
 
 COPY docker-php-ext-* /usr/local/bin/
 
